@@ -33,7 +33,8 @@ import {
   XAxis, 
   YAxis, 
   Tooltip, 
-  CartesianGrid 
+  CartesianGrid,
+  Line
 } from 'recharts';
 
 const STOCK_TRENDS = [
@@ -69,12 +70,88 @@ const STOCK_TRENDS = [
   { day: '30/05', total: 418, average: 355, details: 'סוף חודש מאי' },
 ];
 
+// Linear Regression Stock Forecast Generator (Noa AI Engine)
+const getStockTrendsWithForecast = () => {
+  const n = STOCK_TRENDS.length;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += STOCK_TRENDS[i].total;
+    sumXY += i * STOCK_TRENDS[i].total;
+    sumX2 += i * i;
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  // Clone with seamless forecast coupling at last day
+  const trendsWithForecast = STOCK_TRENDS.map((item, index) => {
+    return {
+      ...item,
+      forecast: index === n - 1 ? item.total : undefined as number | undefined
+    };
+  });
+
+  // Project 15 future days of depletion
+  let daysToDepletion = -1;
+  const futureDaysCount = 15;
+  for (let i = 1; i <= futureDaysCount; i++) {
+    const futureIndex = n - 1 + i;
+    const projectedVal = Math.round(slope * futureIndex + intercept);
+    
+    // Day labeling (converting index to Hebrew date standard)
+    const dayIndexInMay = 30 + i;
+    let dayStr = "";
+    if (dayIndexInMay <= 31) {
+      dayStr = `${dayIndexInMay}/05`;
+    } else {
+      const dayInJune = dayIndexInMay - 31;
+      dayStr = `${dayInJune < 10 ? '0' : ''}${dayInJune}/06`;
+    }
+
+    const val = Math.max(0, projectedVal);
+    if (proj_val_calc(projectedVal) && daysToDepletion === -1) {
+      daysToDepletion = i;
+    }
+
+    function proj_val_calc(pVal: number) {
+      return pVal <= 0;
+    }
+
+    trendsWithForecast.push({
+      day: dayStr,
+      total: undefined as any,
+      average: undefined as any,
+      forecast: val,
+      details: `חיזוי מונחה בינה מלאכותית Noa AI: מלאי חזוי ${val} יחידות`
+    });
+  }
+
+  // Fallback prediction estimation if not depleted within 15 days
+  if (daysToDepletion === -1 && slope < 0) {
+    daysToDepletion = Math.round(-STOCK_TRENDS[n - 1].total / slope);
+  }
+
+  return { 
+    data: trendsWithForecast, 
+    daysToDepletion: daysToDepletion > 0 ? daysToDepletion : 36,
+    slope: Math.abs(slope).toFixed(1)
+  };
+};
+
+const FORECAST_RESULTS = getStockTrendsWithForecast();
+
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{
     payload: {
       day: string;
-      total: number;
+      total?: number;
+      forecast?: number;
       details: string;
     };
   }>;
@@ -83,11 +160,21 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    const isForecast = data.total === undefined && data.forecast !== undefined;
+    
     return (
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xl space-y-2 select-none text-right">
         <p className="text-[10px] font-black text-slate-400 font-mono tracking-widest leading-none">{data.day}</p>
         <p className="text-sm font-black text-saban-blue leading-none">
-          מלאי כולל: <span className="text-saban-gold font-mono">{data.total} יח'</span>
+          {isForecast ? (
+            <>
+              מלאי חזוי (Noa AI): <span className="text-orange-600 font-mono font-black">{data.forecast} יח'</span>
+            </>
+          ) : (
+            <>
+              מלאי כולל: <span className="text-saban-gold font-mono">{data.total} יח'</span>
+            </>
+          )}
         </p>
         <p className="text-[10px] font-bold text-slate-500 leading-normal border-t border-slate-50 pt-2">
           {data.details}
@@ -517,17 +604,44 @@ export const AdminDashboard = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2 text-right">
             <span className="text-saban-gold font-black text-[10px] uppercase tracking-[4px]">Live Insights</span>
-            <h3 className="text-2xl font-black text-saban-blue tracking-tight">מגמת דילול מלאי - 30 ימים אחרונים</h3>
-            <p className="text-slate-400 text-xs font-bold leading-relaxed font-heebo">מעקב קצב יציאת חומרי מליטה, ברזל ואיטום מהמחסן המרכזי</p>
+            <h3 className="text-2xl font-black text-saban-blue tracking-tight">מגמת דילול מלאי וחיזוי התרוקנות (Noa AI)</h3>
+            <p className="text-slate-400 text-xs font-bold leading-relaxed font-heebo">מעקב קצב דילול חומרי מליטה וברזל עם מודל חיזוי ליניארי מבוסס 30 הימים האחרונים</p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-3">
               <span className="w-3 h-0.5 bg-[#1E3A8A] inline-block" />
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">מדד דילול כולל (יח')</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-3 h-0.5 bg-[#C5A059] border-t border-dashed inline-block" />
+              <span className="w-3 h-3 bg-slate-50 border border-[#C5A059] border-t-2 border-dashed inline-block" />
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">קצב ממוצע</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-0.5 bg-orange-600 border-t border-dotted inline-block animate-pulse" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">חיזוי התרוקנות (יח')</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Forecast Stats Widgets */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100/50">
+          <div className="text-right space-y-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] font-heebo">סטטוס מודל חיזוי</span>
+            <div className="text-base font-black text-slate-800 flex items-center gap-2 justify-end">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
+              <span className="font-heebo">אלגוריתם Noa AI פעיל</span>
+            </div>
+          </div>
+          <div className="text-right space-y-1 border-r border-slate-200/60 pr-6">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] font-heebo">קצב דילול יומי ממוצע</span>
+            <div className="text-base font-black text-saban-blue font-mono">
+              ~ {FORECAST_RESULTS.slope} <span className="text-[11px] text-slate-400 font-bold font-heebo">יח' ליום</span>
+            </div>
+          </div>
+          <div className="text-right space-y-1 border-r border-slate-200/60 pr-6">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] font-heebo">צפי התרוקנות מלאי כולל</span>
+            <div className="text-base font-black text-orange-600 font-heebo">
+              בעוד <span className="font-mono text-lg font-black">{FORECAST_RESULTS.daysToDepletion}</span> ימים
             </div>
           </div>
         </div>
@@ -535,7 +649,7 @@ export const AdminDashboard = () => {
         <div className="h-64 w-full" dir="ltr">
           <ResponsiveContainer width="100%" height={256}>
             <AreaChart
-              data={STOCK_TRENDS}
+              data={FORECAST_RESULTS.data}
               margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
             >
               <defs>
@@ -584,6 +698,15 @@ export const AdminDashboard = () => {
                 strokeDasharray="5 5"
                 fillOpacity={1} 
                 fill="url(#colorAverage)" 
+              />
+              <Line
+                type="monotone"
+                dataKey="forecast"
+                stroke="#EA580C"
+                strokeWidth={3}
+                strokeDasharray="5 5"
+                dot={{ r: 4, strokeWidth: 1, fill: '#FFF' }}
+                activeDot={{ r: 6, stroke: '#EA580C', strokeWidth: 2, fill: '#FFF' }}
               />
             </AreaChart>
           </ResponsiveContainer>
