@@ -533,7 +533,7 @@ export const AdminDashboard = () => {
         </div>
         
         <div className="h-64 w-full" dir="ltr">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={256}>
             <AreaChart
               data={STOCK_TRENDS}
               margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
