@@ -9,12 +9,12 @@ interface DataItem {
   Status: string;
 }
 
-export default function AdminDashboard() {
+// השינוי כאן: הורדנו את המילה default
+export function AdminDashboard() {
   const [data, setData] = useState<DataItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // משיכת ה-URL של ה-API ממשתנה הסביבה של Vite
   const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
   useEffect(() => {
