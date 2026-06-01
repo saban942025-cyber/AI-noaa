@@ -1,0 +1,11 @@
+{
+  "name": "ח.סבן חומרי בניין",
+  "description": "מרכז חומרי בניין פרימיום - פתרונות בנייה מתקדמים, אקדמיה טכנית ועוזרת AI אישית",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation",
+    "identity-credentials-get"
+  ],
+  "majorCapabilities": []
+}

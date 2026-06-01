@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;400;600;800&family=Heebo:wght@100;400;700;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-assistant: "Assistant", sans-serif;
+  --font-heebo: "Heebo", sans-serif;
+  --color-saban-blue: #1E3A8A;
+  --color-saban-accent: #3B82F6;
+  --color-saban-gold: #C5A059;
+}
+
+:root {
+  font-family: "Assistant", sans-serif;
+  direction: rtl;
+}
+
+body {
+  @apply text-slate-900 overflow-x-hidden min-h-screen bg-slate-50;
+}
+
+.glass-white {
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(30,58,138,0.08)];
+}
+
+.glass-card {
+  @apply bg-white/80 backdrop-blur-sm border border-slate-100 shadow-xl hover:shadow-2xl hover:border-saban-blue/20 transition-all duration-500;
+}
+
+.btn-gold {
+  @apply bg-saban-gold text-white hover:bg-[#B38F4D] transition-colors shadow-lg;
+}
